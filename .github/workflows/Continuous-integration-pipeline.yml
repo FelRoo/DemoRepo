@@ -1,0 +1,33 @@
+name: Continious integration pipeline
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+  workflow_dispatch:
+
+jobs:
+  Package-and-test-code:
+    env:
+      CREDS: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_CICD_DEMO_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout and package code
+        uses: actions/checkout@v4
+
+      - name: Test code
+        run: |
+          # Check if index.html exists
+          if [ ! -f "index.html" ]; then
+            echo "Error: index.html does not exist in the current directory."
+            exit 1
+          fi
+
+          # Check if the file ends with .html
+          if [[ ! "index.html" =~ \.html$ ]]; then
+            echo "Error: The file does not end with .html"
+            exit 1
+          fi
+
+          echo "The file index.html ends with .html"
