@@ -53,7 +53,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-              az storage blob upload --account-name saaticsitedemostfr --account-key ${{ secrets.AZURE_SA_TEST_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
+              az storage blob upload --account-name testcicddemoaccount --account-key ${{ secrets.AZURE_SA_TEST_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
 
       - name: Finilize
         run: |
@@ -95,7 +95,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-              az storage blob upload --account-name saaticsitedemostfr --account-key ${{ secrets.AZURE_SA_PROD_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
+              az storage blob upload --account-name prodcicddemoaccount --account-key ${{ secrets.AZURE_SA_PROD_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
 
       - name: Finilize
         run: |
