@@ -1,0 +1,77 @@
+name: Continious delivery pipeline
+
+on:
+  push:
+    branches:
+      - 'main'
+
+  workflow_dispatch:
+
+jobs:
+  Package-and-test-code:
+    env:
+      CREDS: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_CICD_DEMO_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout and package code
+        uses: actions/checkout@v4
+
+      - name: Test code
+        run: |
+          # Check if index.html exists
+          if [ ! -f "index.html" ]; then
+            echo "Error: index.html does not exist in the current directory."
+            exit 1
+          fi
+
+          # Check if the file ends with .html
+          if [[ ! "index.html" =~ \.html$ ]]; then
+            echo "Error: The file does not end with .html"
+            exit 1
+          fi
+
+          echo "The file index.html ends with .html"
+
+  Deploy-to-test-environment:
+    needs: Package-and-test-code
+    env:
+      CREDS: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_CICD_DEMO_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout and package code
+        uses: actions/checkout@v4
+    
+      - name: Prepare to deploy test website
+        uses: azure/login@v2
+        with:
+          creds: ${{ env.CREDS }}
+          enable-AzPSSession: true
+
+      - name: Deploy test website
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+              az storage blob upload --account-name saaticsitedemostfr --account-key ${{ secrets.AZURE_SA_TEST_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
+
+      - name: Finilize
+        run: |
+              az logout
+        if: always()
+
+  Test-website-in-test-environment:
+    needs: Deploy-to-test-environment
+    env:
+      CREDS: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_CICD_DEMO_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate test website
+        run: |
+          URL="http://example.com"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $URL)
+          if [ "$response" -ne 200 ]; then
+            echo "Error: Received response code $response"
+            exit 1
+          fi
+          echo "Success: Received response code 200"
