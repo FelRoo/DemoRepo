@@ -17,21 +17,14 @@ jobs:
       - name: Checkout and package code
         uses: actions/checkout@v4
 
+      - name: Prepare test
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+
       - name: Test code
-        run: |
-          # Check if index.html exists
-          if [ ! -f "index.html" ]; then
-            echo "Error: index.html does not exist in the current directory."
-            exit 1
-          fi
-
-          # Check if the file ends with .html
-          if [[ ! "index.html" =~ \.html$ ]]; then
-            echo "Error: The file does not end with .html"
-            exit 1
-          fi
-
-          echo "The file index.html ends with .html"
+        run: python test.py
 
   Deploy-to-test-environment:
     needs: Package-and-test-code
@@ -42,6 +35,15 @@ jobs:
 
       - name: Checkout and package code
         uses: actions/checkout@v4
+
+      - name: Preparation of environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+
+      - name: Move files
+        run: python movefiles.py
     
       - name: Prepare to deploy test website
         uses: azure/login@v2
@@ -54,6 +56,8 @@ jobs:
         with:
           inlineScript: |
               az storage blob upload --account-name testcicddemoaccount --account-key ${{ secrets.AZURE_SA_TEST_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
+              az storage blob upload-batch --account-name testcicddemoaccount --account-key ${{ secrets.AZURE_SA_TEST_ACCOUNTKEY }} --source ./images --destination '$web' --destination-path /images --overwrite
+
 
       - name: Finilize
         run: |
@@ -85,6 +89,15 @@ jobs:
       - name: Checkout and package code
         uses: actions/checkout@v4
 
+      - name: Preparation of environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+
+      - name: Move files
+        run: python movefiles.py
+
       - name: Prepare to deploy test website
         uses: azure/login@v2
         with:
@@ -96,6 +109,7 @@ jobs:
         with:
           inlineScript: |
               az storage blob upload --account-name prodcicddemoaccount --account-key ${{ secrets.AZURE_SA_PROD_ACCOUNTKEY }} --container-name '$web' --file ./index.html --name index.html --overwrite
+              az storage blob upload-batch --account-name prodcicddemoaccount --account-key ${{ secrets.AZURE_SA_PROD_ACCOUNTKEY }} --source ./images --destination '$web' --destination-path /images --overwrite
 
       - name: Finilize
         run: |
